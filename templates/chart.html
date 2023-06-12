@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ChartJS - BarGraph</title>
+    <link href="/output.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="container mx-auto px-50">
+      <div id="title">Demo</div>
+      <div style="width: 75%">
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      var fruits = ["January", "February", "March", "April", "May"];
+      var apples = [12, 19, 3, 5, 2];
+      var oranges = [2, 3, 5, 7, 4];
+
+      var barChartData = {
+        labels: fruits,
+        datasets: [
+          {
+            label: "Apples",
+            backgroundColor: "rgba(200,0,0,0.5)",
+            data: apples,
+          },
+          {
+            label: "Oranges",
+            backgroundColor: "rgba(255,165,0,0.5)",
+            data: oranges,
+          },
+        ],
+      };
+
+      window.onload = function () {
+        var ctx = document.getElementById("canvas").getContext("2d");
+        window.myBar = new Chart(ctx, {
+          type: "bar",
+          data: barChartData,
+          options: {
+            responsive: true,
+            legend: {
+              position: "top",
+            },
+            title: {
+              display: true,
+              text: "Apples and Oranges Comparison",
+            },
+          },
+        });
+      };
+    </script>
+  </body>
+</html>
