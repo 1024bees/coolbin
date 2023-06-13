@@ -7,6 +7,7 @@ use axum::{
 };
 
 use askama::Template;
+use axum_sessions::extractors::WritableSession;
 
 #[derive(Template)]
 #[template(path = "chart_landing_template.html")]
@@ -30,13 +31,14 @@ pub struct Options {
 
 struct Selector {
     name: &'static str,
+    selected_option: String,
     htmx_options: String,
 }
 
 impl Selector {
     fn to_default_htmx_options(&self) -> String {
         format!(
-            r##" hx-get=/htmx_demo/selector/{} hx-target=#{} hx-indicator=.htmx-indicator "##,
+            r##" hx-get=/htmx_demo/selector/{} hx-target=#{} hx-trigger=htmx:afterSettle,change hx-indicator=.htmx-indicator "##,
             self.name, self.name
         )
     }
@@ -46,17 +48,23 @@ impl DropwdownTemplate {
     fn some_default() -> Self {
         let sel3 = Selector {
             name: "git_sha",
-            htmx_options: r##" hx-get=/htmx_demo/graph_data    hx-ext=chartjs  hx-trigger=change  hx-swap=none "##
+            selected_option: "".into(),
+        
+            htmx_options: r##" hx-get=/htmx_demo/graph_data    hx-ext=chartjs  hx-trigger=change hx-swap=none "##
                 .to_string(),
         };
 
         let sel2 = Selector {
             name: "branch",
+            selected_option: "".into(),
+
             htmx_options: sel3.to_default_htmx_options(),
         };
 
         let sel1 = Selector {
             name: "repo",
+            selected_option: "".into(),
+
             htmx_options: sel2.to_default_htmx_options(),
         };
 
@@ -112,11 +120,21 @@ pub async fn generate_random_chart(
     })
 }
 
+
+
 #[tracing::instrument(name = "getting selectors")]
 pub async fn selector_demo_path(
     Path(name): Path<String>,
-    query_params: Query<HashMap<String, String>>,
+    Query(query_params): Query<HashMap<String, String>>,
+    mut session: WritableSession,
 ) -> Html<String> {
+    let mut state : HashMap<String,String>= session.get("page-state").unwrap_or(HashMap::new());
+    
+    state.extend(query_params.clone().into_iter());
+    
+    tracing::info!("State params are: {:?} is {:?}",query_params, state);
+session.insert("page-state", state).unwrap();
+
     let options = (0..5).map(|val| format!("{}_{}", name, val)).collect();
     let opts = Options { options };
     tracing::info!("Rendering path, ");

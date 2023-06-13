@@ -2,7 +2,7 @@ use super::routes::{health_check, test_graph};
 
 use axum::body::Body;
 use axum::http::Request;
-use axum::{routing::get, Router};
+use axum::{routing::{get,post}, Router};
 use std::future::Future;
 use std::net::TcpListener;
 
@@ -13,6 +13,12 @@ use crate::{
     configuration::Settings,
     routes::{generate_random_chart, selector_demo_path},
 };
+use axum_sessions::{
+    async_session::MemoryStore,
+    extractors::{ReadableSession, WritableSession},
+    SessionLayer,
+};
+use rand::Rng;
 use tower_http::services::ServeDir;
 
 // We need to define a wrapper type in order to retrieve the URL
@@ -21,6 +27,9 @@ use tower_http::services::ServeDir;
 pub fn run(app: Application) -> impl Future<Output = Result<(), hyper::Error>> {
     let listener = app.listener;
     let fs = ServeDir::new("templates").append_index_html_on_directories(true);
+    let store = MemoryStore::new();
+    let secret = rand::thread_rng().gen::<[u8; 128]>();
+    let session_layer = SessionLayer::new(store, &secret).with_secure(false);
 
     let app = Router::new()
         .fallback_service(fs)
@@ -50,6 +59,7 @@ pub fn run(app: Application) -> impl Future<Output = Result<(), hyper::Error>> {
         // This layer creates a new id for each request and puts it into the request extensions.
         // Note that it should be added after the Trace layer.
         .layer(RequestIdLayer)
+        .layer(session_layer)
         .layer(axum::Extension(reqwest::Client::new()));
 
     axum::Server::from_tcp(listener)
