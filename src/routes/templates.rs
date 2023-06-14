@@ -27,6 +27,7 @@ pub struct DropwdownTemplate {
 #[template(path = "options_fragment.html")]
 pub struct Options {
     options: Vec<String>,
+    maybe_selected_options: String
 }
 
 struct Selector {
@@ -119,8 +120,17 @@ pub async fn generate_random_chart(
         datasets: vec![first_ds, second_ds],
     })
 }
+#[derive(serde::Serialize, serde::Deserialize, Default, Debug)]
+struct TemplateState {
+    repo: String,
+    repo2state: HashMap<String, BranchAndSha>
+}
 
-
+#[derive(serde::Serialize, serde::Deserialize, Default, Debug)]
+struct BranchAndSha {
+    branch: String, 
+    sha : String,
+}
 
 #[tracing::instrument(name = "getting selectors")]
 pub async fn selector_demo_path(
@@ -128,15 +138,40 @@ pub async fn selector_demo_path(
     Query(query_params): Query<HashMap<String, String>>,
     mut session: WritableSession,
 ) -> Html<String> {
-    let mut state : HashMap<String,String>= session.get("page-state").unwrap_or(HashMap::new());
+
+
+
+    let mut state = session.get("page-state").unwrap_or(TemplateState::default());
+    //state.extend(query_params.clone().into_iter());
+    tracing::info!("state is {:?}",state);
     
-    state.extend(query_params.clone().into_iter());
     
-    tracing::info!("State params are: {:?} is {:?}",query_params, state);
-session.insert("page-state", state).unwrap();
+
+    let maybe_selected_options :String=  match name.as_str() { 
+        "repo" => state.repo.clone(),
+        "branch" => {  
+
+            let current_repo = query_params.get("repo").cloned().unwrap();
+            state.repo = current_repo.clone();
+
+            state.repo2state.entry(current_repo).or_default().branch.clone()
+        }
+
+        ,
+        "git_sha" => {
+            let branch = query_params.get("branch").cloned().unwrap();
+            let ent = state.repo2state.entry(state.repo.clone()).or_default();
+            ent.branch = branch;
+            ent.sha.clone()
+        }
+
+        _ => {tracing::info!(name); "".into()}
+    }.into();
+    session.insert("page-state", state).unwrap();
+
 
     let options = (0..5).map(|val| format!("{}_{}", name, val)).collect();
-    let opts = Options { options };
+    let opts = Options { options, maybe_selected_options  };
     tracing::info!("Rendering path, ");
     Html(opts.render().unwrap())
 }

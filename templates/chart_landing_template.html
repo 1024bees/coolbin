@@ -4,15 +4,33 @@
     <title>ChartJS - BarGraph</title>
     <link href="/output.css" rel="stylesheet" />
   </head>
+  <style>
+    @media (min-width: 640px) {
+      .w-fixed {
+        flex: 0 1 230px;
+        min-width: 250px;
+      }
+    }
+  </style>
   <body>
-    <div class="container mx-auto px-50">
-      <div id="title">Demo</div>
-      <div style="width: 75%">
-        <canvas id="canvas"></canvas>
+    <div
+      class="w-full flex flex-col sm:flex-row flex-wrap sm:flex-nowrap py-4 flex-grow"
+    >
+      <div class="w-fixed w-full flex-shrink flex-grow-0 px-4">
+        <div class="sticky top-0 p-4 bg-gray-100 rounded-xl w-full h-full">
+          {{selectors|safe}}
+        </div>
       </div>
+      <main role="main" class="w-full flex-grow pt-1 px-3">
+        <h1 class="text-3xl md:text-5xl mb-4 font-extrabold" id="home">Demo</h1>
+        <canvas id="canvas"></canvas>
+      </main>
     </div>
-    <div>{{selectors|safe}}</div>
-    
+
+    <div class="min-h-screen flex flex-col">
+      <nav class="order-first sm:w-32 bg-purple-200"></nav>
+    </div>
+
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.3.0/chart.umd.js"
       integrity="sha512-CMF3tQtjOoOJoOKlsS7/2loJlkyctwzSoDK/S40iAB+MqWSaf50uObGQSk5Ny/gfRhRCjNLvoxuCvdnERU4WGg=="
@@ -49,7 +67,7 @@
       window.onload = function () {
         var ctx = document.getElementById("canvas").getContext("2d");
         window.myBar = new Chart(ctx, {
-          type: "bar",
+          type: "line",
           data: barChartData,
           options: {
             responsive: true,
